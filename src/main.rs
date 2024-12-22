@@ -19,7 +19,7 @@ use std::{
 use std::thread::sleep;
 use rand::random;
 
-const GAME_WIDTH: usize = 30;
+const GAME_WIDTH: usize = 60;
 const GAME_HEIGHT: usize = 30;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -27,6 +27,7 @@ enum CellState {
     Empty,
     Player,
     Stone,
+    Water,
     Wall,
 }
 
@@ -51,7 +52,19 @@ impl GameState {
             grid[i][GAME_WIDTH - 1] = CellState::Wall;
         }
 
-        // Generate stone with Perlin noise
+        // first layer river generation using perlin noise
+        let perlin = Perlin::new(random());
+        for y in 1..GAME_HEIGHT - 1 {
+            for x in 1..GAME_WIDTH - 1 {
+                let noise_value = perlin.get([x as f64 / 10.0, y as f64 / 10.0, 0.0]);
+                if noise_value > 0.4 {
+                    grid[y][x] = CellState::Water;
+                }
+            }
+        }
+        
+        
+        // second layer stone generaation
         let perlin = Perlin::new(random());
         for y in 1..GAME_HEIGHT - 1 {
             for x in 1..GAME_WIDTH - 1 {
@@ -253,9 +266,10 @@ fn ui(f: &mut ratatui::Frame, game_state: &GameState) {
         for x in 0..GAME_WIDTH {
             let cell = game_state.grid[y][x];
             let symbol = match cell {
-                CellState::Empty => ".",
+                CellState::Empty => " ",
                 CellState::Player => "@",
                 CellState::Stone => "#",
+                CellState::Water => ".",
                 CellState::Wall => "█",
             };
             row.push_str(symbol);
